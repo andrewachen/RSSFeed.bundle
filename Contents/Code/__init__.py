@@ -6,6 +6,7 @@ ICON     = 'icon-default.png'
 SHOW_DATA = 'rssdata.json'
 NAMESPACES = {'feedburner': 'http://rssnamespace.org/feedburner/ext/1.0'}
 NAMESPACES2 = {'media': 'http://search.yahoo.com/mrss/'}
+NAMESPACE_SMIL = {'smil': 'http://www.w3.org/2005/SMIL21/Language'}
 
 http = 'http:'
 
@@ -196,6 +197,17 @@ def ShowRSS(title, url, show_type, thumb):
       test = URLTest(link)
     else:
       test = 'false'
+
+    # theplatform stream links are SMIL, despite being referenced in RSS as the underlying mediatype
+    # that they're holding.
+    if 'link.theplatform.com' in media_url:
+      smil = XML.ElementFromURL(media_url)
+      try:
+        media_url = smil.xpath('//smil:video/@src', namespaces=NAMESPACE_SMIL)[0]
+      except Exception as e:
+        Log("Found theplatform.com link, but couldn't resolve stream: " + str(e))
+        media_url = None
+
     # Feeds from archive.org load faster using the CreateObject() function versus the URL service.
     # This also catches items with no media and allows for feed that may contain both audio and video items
     # If archive.org is sent to URL service, adding #video to the end of the link makes it load faster
