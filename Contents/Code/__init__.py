@@ -125,7 +125,7 @@ def ShowRSS(title, url, show_type, thumb):
   feed_title = title
   xml = XML.ElementFromURL(url)
   for item in xml.xpath('//item'):
-    # We try to pull the enclosure or the first media:content given since that tends to be the highest quality.
+    # We try to pull the enclosure or the highest bitrate media:content. If no bitrate, the first one is taken.
     # There is too much variety in the way quality is specified to pull all and give quality options
     # This code can be added to only return meida of type audio or video - [contains(@type,"video") or contains(@type,"audio")]
     # Not currently in code so we can specify why a feed item failed due to being the wrong type of media
@@ -134,9 +134,17 @@ def ShowRSS(title, url, show_type, thumb):
       media_type = item.xpath('.//enclosure/@type')[0]
     except:
       try:
-        media_url = item.xpath('.//media:content/@url', namespaces=NAMESPACES2)[0]
-        media_type = item.xpath('.//media:content/@type', namespaces=NAMESPACES2)[0]
-      except:
+        medias = item.xpath('.//media:content', namespaces=NAMESPACES2)
+        Log("found " + str(len(medias)) + " medias")
+        bitrate = -1
+        for media in medias:
+          if media.get('bitrate', default=0) > bitrate:
+            bitrate = media.get('bitrate', default=0)
+            media_url = media.get('url')
+            Log("taking media url " + media_url + " with bitrate " + str(bitrate))
+            media_type = media.get('type')
+      except Exception, e:
+        Log("no media:content objects " + str(e))
         media_url = None
 
     try:
